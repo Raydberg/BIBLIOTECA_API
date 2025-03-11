@@ -10,6 +10,8 @@ namespace BIBLIOTECA_API.Entidades
         [StringLength(10, ErrorMessage = "El campo {0} debe tener {1} caracteres o menos")]
         //[FirstLetterMayuscula]
         public required string Nombre { get; set; }
+
+
         //Propiedad de Navegacion - Traer Listado de lIbros
         public List<Libro> Libros { get; set; } = new List<Libro>();
 
