@@ -1,4 +1,6 @@
-﻿using BIBLIOTECA_API.DB;
+﻿using AutoMapper;
+using BIBLIOTECA_API.DB;
+using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,18 +12,27 @@ namespace BIBLIOTECA_API.Controllers
     public class AutoresController : ControllerBase
     {
         private readonly ApplicationDbContext context;
+        private readonly IMapper _mapper;
+
+        private readonly ILogger<AutoresController> logger;
         // Inyeccion de dependencia para nuestro ApplicationDbContext
-        public AutoresController (ApplicationDbContext context)
+        public AutoresController (ApplicationDbContext context, IMapper mapper)
         {
             this.context = context;
+            _mapper = mapper;
         }
         [HttpGet]
-        public async Task<IEnumerable<Autor>> Get ()
+        public async Task<IEnumerable<AutorDTO>> Get ()
         {
-            // Usamos el context para luego ir a la tabla autores
-            // Y traer la data de manera asincrona
-            return await context.Autores.ToListAsync();
+            var autores = await context.Autores.ToListAsync();
+
+            // Usamos nuestro mapper 
+            // Dentro del Map<T> -> Ponemos la entidad o el resultado que vendra para mostrar 
+            var autoresDTO = _mapper.Map<IEnumerable<AutorDTO>>(autores);
+            return autoresDTO;
         }
+
+
 
         // Si vamos a usar dos metodos GET tenemos que diferenciarlos
         // En este caso vamos a llamar mediante el ID y tendria que ir asi como estan juntos
@@ -31,8 +42,8 @@ namespace BIBLIOTECA_API.Controllers
          * siempre que vayamos a enviar una data para esperar algo a cambio es
          * conveniente usarlo
          */
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Autor>> Get (int id)
+        [HttpGet("{id:int}", Name = "ObtenerAutor")]
+        public async Task<ActionResult<AutorDTO>> Get (int id)
         {
             var autor = await context.Autores.FirstOrDefaultAsync(autor => autor.Id == id);
 
@@ -40,28 +51,29 @@ namespace BIBLIOTECA_API.Controllers
             {
                 return NotFound();
             }
+            // Hacemos nuestro mappeo
+            var autorDto = _mapper.Map<AutorDTO>(autor);
 
-            return autor;
+            return autorDto;
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post (Autor autor)
+        public async Task<ActionResult> Post (AutorCreateResponseDTO autorCreateDto)
         {
-            context.Add(autor);
+            var autor = _mapper.Map<Autor>(autorCreateDto);
+            context.Autores.Add(autor);
             // Guardar cambios de manera asincrona
             await context.SaveChangesAsync();
-            return Ok();
+            var autorDto = _mapper.Map<AutorDTO>(autor);
+            return CreatedAtRoute("ObtenerAutor", new { id = autor.Id }, autorDto);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put (int id, Autor autor)
+        public async Task<ActionResult> Put (int id, AutorCreateResponseDTO autorCreateResponse)
         {
-            if (id != autor.Id)
-            {
-                return BadRequest("Los ids deben conicidir");
-            }
-
-            context.Update(autor);
+            var autor = _mapper.Map<Autor>(autorCreateResponse);
+            context.Update(autorCreateResponse);
+            autor.Id = id;
             await context.SaveChangesAsync();
             return Ok();
         }

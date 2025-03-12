@@ -1,4 +1,6 @@
-﻿using BIBLIOTECA_API.DB;
+﻿using AutoMapper;
+using BIBLIOTECA_API.DB;
+using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,56 +12,67 @@ namespace BIBLIOTECA_API.Controllers
     public class LibrosController : ControllerBase
     {
         private readonly ApplicationDbContext context;
+        private readonly IMapper _mapper;
 
-        public LibrosController (ApplicationDbContext context)
+        public LibrosController (ApplicationDbContext context, IMapper mapper)
         {
             this.context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<IEnumerable<Libro>> Get ()
+        public async Task<IEnumerable<LibroDTO>> Get ()
         {
-            return await context.Libros.ToListAsync();
+            var libro = await context.Libros.ToListAsync();
+            var libroDTO = _mapper.Map<IEnumerable<LibroDTO>>(libro);
+
+            return libroDTO;
         }
 
-        [HttpGet("{id:int}")] //-> Si queremos incuir query string api/libros?llave1=valor1&llave2=valor2
-        public async Task<ActionResult<Libro>> Get ([FromRoute] int id, [FromQuery] isAutor)
+        [HttpGet("{id:int}", Name = "ObtenerLibro")]
+        public async Task<ActionResult<LibroDTO>> Get (int id)
         {
             var libro = await context.Libros
-                // Esto lo que hace es incluir al autor en el resultado
-                // Ya que tenemos la propieda de navegacion
                 .Include(libro => libro.Autor)
                 .FirstOrDefaultAsync(libro => libro.Id == id);
+
+
             if (libro is Nullable)
             {
                 return NotFound("Libro no encontrado");
             }
+            var libroDTO = _mapper.Map<LibroDTO>(libro);
 
-            return libro;
+            return libroDTO;
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post ([FromBody] Libro libro)
+
+        public async Task<ActionResult> Post (LibroCreateDTO libroCreateDto)
         {
+            var libro = _mapper.Map<Libro>(libroCreateDto);
+
             // Permite obtener true o false , que cuumpla la condicion dada
             var isAutor = await context.Autores.AnyAsync(autor => autor.Id == libro.AutorId);
             if (!isAutor)
             {
+
                 ModelState.AddModelError(nameof(libro.AutorId), "El autor de id {libro.AutorId} no existe");
                 return ValidationProblem();
             }
             context.Add(libro);
             await context.SaveChangesAsync();
-            return Ok();
+
+            var libroDto = _mapper.Map<LibroDTO>(libro);
+
+            return CreatedAtRoute("ObtenerLibro", new { id = libro.Id }, libroDto);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put (int id, Libro libro)
+        public async Task<ActionResult> Put (int id, LibroCreateDTO libroCreateDto)
         {
-            if (id != libro.Id)
-            {
-                return BadRequest();
-            }
+            var libro = _mapper.Map<Libro>(libroCreateDto);
+
             var isAutor = await context.Autores.AnyAsync(autor => autor.Id == libro.AutorId);
             if (!isAutor)
             {

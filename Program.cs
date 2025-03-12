@@ -6,6 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Area de servicios 
 
+// Configurar automapper en nuestra aplicacio
+builder.Services.AddAutoMapper(typeof(Program));
+
+//builder.Services.AddTransient<>()
+
 // Habilitar los controladores
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
