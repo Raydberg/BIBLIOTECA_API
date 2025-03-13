@@ -30,7 +30,7 @@ namespace BIBLIOTECA_API.Controllers
         }
 
         [HttpGet("{id:int}", Name = "ObtenerLibro")]
-        public async Task<ActionResult<LibroDTO>> Get (int id)
+        public async Task<ActionResult<LibroWithAutorDTO>> Get (int id)
         {
             var libro = await context.Libros
                 .Include(libro => libro.Autor)
@@ -41,7 +41,7 @@ namespace BIBLIOTECA_API.Controllers
             {
                 return NotFound("Libro no encontrado");
             }
-            var libroDTO = _mapper.Map<LibroDTO>(libro);
+            var libroDTO = _mapper.Map<LibroWithAutorDTO>(libro);
 
             return libroDTO;
         }
@@ -80,7 +80,7 @@ namespace BIBLIOTECA_API.Controllers
             }
             context.Update(libro);
             await context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
@@ -92,7 +92,7 @@ namespace BIBLIOTECA_API.Controllers
                 return NotFound();
             }
 
-            return Ok();
+            return NoContent();
         }
     }
 }

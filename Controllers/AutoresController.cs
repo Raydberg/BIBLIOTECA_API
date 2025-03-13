@@ -2,6 +2,7 @@
 using BIBLIOTECA_API.DB;
 using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,16 +44,16 @@ namespace BIBLIOTECA_API.Controllers
          * conveniente usarlo
          */
         [HttpGet("{id:int}", Name = "ObtenerAutor")]
-        public async Task<ActionResult<AutorDTO>> Get (int id)
+        public async Task<ActionResult<AutorWithLibrosDTO>> Get (int id)
         {
-            var autor = await context.Autores.FirstOrDefaultAsync(autor => autor.Id == id);
+            var autor = await context.Autores.Include(autor => autor.Libros).FirstOrDefaultAsync(autor => autor.Id == id);
 
             if (autor is null)
             {
                 return NotFound();
             }
             // Hacemos nuestro mappeo
-            var autorDto = _mapper.Map<AutorDTO>(autor);
+            var autorDto = _mapper.Map<AutorWithLibrosDTO>(autor);
 
             return autorDto;
         }
@@ -75,19 +76,43 @@ namespace BIBLIOTECA_API.Controllers
             context.Update(autorCreateResponse);
             autor.Id = id;
             await context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
+        }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult> Patch (int id, JsonPatchDocument<AutorPatchDTO> patchDoc)
+        {
+            if (patchDoc is null) { return BadRequest(); }
+
+            var autorDB = await context.Autores.FirstOrDefaultAsync(autor => autor.Id == id);
+            if (autorDB is null) { return NotFound(); }
+
+            // Mapeo
+            var autorPatchDto = _mapper.Map<AutorPatchDTO>(autorDB);
+            // Que pueda tener validaciones
+
+            patchDoc.ApplyTo(autorPatchDto, ModelState);
+            var isValid = TryValidateModel(autorPatchDto);
+            if (!isValid) { return ValidationProblem(); }
+
+            _mapper.Map(autorPatchDto, autorDB);
+            await context.SaveChangesAsync();
+
+            return NoContent();
+
         }
 
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> Deleted (int id)
         {
             var registrosBorrado = await context.Autores.Where(autor => autor.Id == id).ExecuteDeleteAsync();
+
             if (registrosBorrado == 0)
             {
                 return NotFound();
             }
 
-            return Ok();
+            return NoContent();
         }
     }
 }

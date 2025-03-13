@@ -13,17 +13,40 @@ namespace BIBLIOTECA_API.Utils
             CreateMap<Autor, AutorDTO>()
                 .ForMember(
                     dto => dto.NombreCompleto,
-                    config => config.MapFrom(autor => $"{autor.Nombre} {autor.Apellidos}")
+                    config => config.MapFrom(autor => MapperNameAndLastName(autor))
                     );
 
-
+            CreateMap<Autor, AutorWithLibrosDTO>()
+                .ForMember(
+                    dto => dto.NombreCompleto,
+                    config => config.MapFrom(autor => MapperNameAndLastName(autor))
+                );
 
             CreateMap<AutorCreateResponseDTO, Autor>();
+
+            CreateMap<Autor, AutorPatchDTO>();
+            // Lo contrario
+            CreateMap<Autor, AutorPatchDTO>().ReverseMap();
+
+
+
+            //----------------------------------------------------------------//
+
 
 
             CreateMap<Libro, LibroDTO>();
 
             CreateMap<LibroCreateDTO, Libro>();
+
+            CreateMap<Libro, LibroWithAutorDTO>().ForMember(dto => dto.AutorNombre
+                , config => config.MapFrom(entidad => MapperNameAndLastName(entidad.Autor!)));
+
+
+
+
         }
+
+
+        private string MapperNameAndLastName (Autor autor) => $"{autor.Nombre} {autor.Apellidos}";
     }
 }
