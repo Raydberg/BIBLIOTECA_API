@@ -1,10 +1,13 @@
-﻿namespace BIBLIOTECA_API.Entidades
+﻿using Microsoft.Build.Framework;
+
+namespace BIBLIOTECA_API.Entidades
 {
     public class Comment
     {
         // Guid -> String  aleatorio
         public Guid Id { get; set; }
-        public required string cuerpo { get; set; }
+        [Required]
+        public required string Cuerpo { get; set; }
         public DateTime FechaPublicacion { get; set; }
         public int LibroId { get; set; }
 

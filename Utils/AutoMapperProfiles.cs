@@ -42,7 +42,12 @@ namespace BIBLIOTECA_API.Utils
                 , config => config.MapFrom(entidad => MapperNameAndLastName(entidad.Autor!)));
 
 
+            //----------------------------------------------------//
 
+
+            CreateMap<CommentCreateDTO, Comment>();
+            CreateMap<CommentPatchDTO, Comment>();
+            CreateMap<CommentPatchDTO, Comment>().ReverseMap();
 
         }
 

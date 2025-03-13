@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using BIBLIOTECA_API.DB;
+using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,83 +23,105 @@ namespace BIBLIOTECA_API.Controllers
 
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Comment>>> GetComments ()
+        public async Task<ActionResult<List<CommentDTO>>> Get (int libroId)
         {
-            return await _context.Comments.ToListAsync();
+            var isLibro = await _context.Libros.AnyAsync(libro => libro.Id == libroId);
+
+            if (!isLibro) { return NotFound(); }
+
+            var comments = await _context.Comments.Where(comment => comment.LibroId == libroId)
+                .OrderByDescending(comment => comment.FechaPublicacion).ToListAsync();
+
+            return _mapper.Map<List<CommentDTO>>(comments);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Comment>> GetComment (Guid id)
+        [HttpGet("{id}", Name = "ObtenerComentario")]
+        public async Task<ActionResult<CommentDTO>> Get (Guid id)
         {
-            var comment = await _context.Comments.FindAsync(id);
+            var comment = await _context.Comments.FirstOrDefaultAsync(comment => comment.Id == id);
+
 
             if (comment == null)
             {
                 return NotFound();
             }
 
-            return comment;
+            return _mapper.Map<CommentDTO>(comment);
         }
 
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutComment (Guid id, Comment comment)
-        {
-            if (id != comment.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(comment).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CommentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
 
 
         [HttpPost]
-        public async Task<ActionResult<Comment>> PostComment (Comment comment)
+        public async Task<ActionResult<Comment>> PostComment (int libroId, CommentCreateDTO commentCreateDto)
         {
+
+            var isLibro = await _context.Libros.AnyAsync(libro => libro.Id == libroId);
+
+            if (!isLibro) { return NotFound(); }
+
+            var comment = _mapper.Map<Comment>(commentCreateDto);
+            comment.LibroId = libroId;
+            comment.FechaPublicacion = DateTime.UtcNow;
+
+
+
             _context.Comments.Add(comment);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetComment", new { id = comment.Id }, comment);
+            var commentDto = _mapper.Map<CommentCreateDTO>(comment);
+
+            return CreatedAtRoute("ObtenerComentario", new { id = comment.Id, libroId }, commentDto);
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> Patch (Guid id, int libroId, JsonPatchDocument<CommentPatchDTO> patchDoc)
+        {
+            if (patchDoc is null) { return BadRequest(); }
+            var isLibro = await _context.Libros.AnyAsync(libro => libro.Id == libroId);
+
+            if (!isLibro) { return NotFound(); }
+
+            var commentDB = await _context.Comments.FirstOrDefaultAsync(comment => comment.Id == id);
+            if (commentDB is null) { return NotFound(); }
+
+            // Mapeo
+            var commentPatchDto = _mapper.Map<CommentPatchDTO>(commentDB);
+            // Que pueda tener validaciones
+
+            patchDoc.ApplyTo(commentPatchDto, ModelState);
+
+            var isValid = TryValidateModel(commentPatchDto);
+            if (!isValid) { return ValidationProblem(); }
+
+            _mapper.Map(commentPatchDto, commentDB);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+
         }
 
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteComment (Guid id)
+        public async Task<IActionResult> Delete (Guid id, int libroId)
         {
-            var comment = await _context.Comments.FindAsync(id);
-            if (comment == null)
+
+            var isLibro = await _context.Libros.AnyAsync(libro => libro.Id == libroId);
+
+            if (!isLibro) { return NotFound(); }
+
+
+            var commentDeleted = await _context.Comments.Where(comment => comment.Id == id).ExecuteDeleteAsync();
+
+
+            if (commentDeleted == 0)
             {
                 return NotFound();
             }
 
-            _context.Comments.Remove(comment);
-            await _context.SaveChangesAsync();
+            //_context.Comments.Remove(comment);
+            //await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool CommentExists (Guid id)
-        {
-            return _context.Comments.Any(e => e.Id == id);
         }
     }
 }
