@@ -52,7 +52,7 @@ namespace BIBLIOTECA_API.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<Comment>> PostComment (int libroId, CommentCreateDTO commentCreateDto)
+        public async Task<ActionResult<Comment>> Post (int libroId, CommentCreateDTO commentCreateDto)
         {
 
             var isLibro = await _context.Libros.AnyAsync(libro => libro.Id == libroId);

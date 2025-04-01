@@ -6,7 +6,7 @@ namespace BIBLIOTECA_API.Utils
 {
     public class AutoMapperProfiles : Profile
     {
-        public AutoMapperProfiles ()
+        public AutoMapperProfiles()
         {
             // Desde Autor hacia AutorDTO
             // Autor -> AutorDTO
@@ -14,7 +14,7 @@ namespace BIBLIOTECA_API.Utils
                 .ForMember(
                     dto => dto.NombreCompleto,
                     config => config.MapFrom(autor => MapperNameAndLastName(autor))
-                    );
+                );
 
             CreateMap<Autor, AutorWithLibrosDTO>()
                 .ForMember(
@@ -29,18 +29,36 @@ namespace BIBLIOTECA_API.Utils
             CreateMap<Autor, AutorPatchDTO>().ReverseMap();
 
 
-
             //----------------------------------------------------------------//
-
 
 
             CreateMap<Libro, LibroDTO>();
 
-            CreateMap<LibroCreateDTO, Libro>();
+            CreateMap<LibroCreateDTO, Libro>()
+                .ForMember(ent => ent.Autores,
+                    config => config.MapFrom(
+                        dto => dto.AutoresIds
+                            .Select(id => new AutorLibro { AutorId = id })
+                    ));
 
-            CreateMap<Libro, LibroWithAutorDTO>().ForMember(dto => dto.AutorNombre
-                , config => config.MapFrom(entidad => MapperNameAndLastName(entidad.Autor!)));
+            CreateMap<AutorLibro, LibroDTO>()
+                .ForMember(dto => dto.id,config => config.MapFrom(ent => ent.LibroId))
+                .ForMember(dto => dto.Titulo,config => config.MapFrom(ent => ent.Libro!.Titulo))
+                ;
 
+            CreateMap<Libro, LibroWithAutorsDTO>();
+
+            
+            
+            CreateMap<AutorLibro, AutorDTO>()
+                .ForMember(dto => dto.id,config=>config.MapFrom(ent => ent.AutorId))
+                .ForMember(dto=> dto.NombreCompleto,config=>config.MapFrom(ent => MapperNameAndLastName(ent.Autor!)))
+                ;
+
+            CreateMap<LibroCreateDTO, AutorLibro>()
+                .ForMember(ent => ent.Libro,
+                    config => config.MapFrom(dto => new Libro{Titulo = dto.Titulo}));
+                
 
             //----------------------------------------------------//
 
@@ -48,10 +66,9 @@ namespace BIBLIOTECA_API.Utils
             CreateMap<CommentCreateDTO, Comment>();
             CreateMap<CommentPatchDTO, Comment>();
             CreateMap<CommentPatchDTO, Comment>().ReverseMap();
-
         }
 
 
-        private string MapperNameAndLastName (Autor autor) => $"{autor.Nombre} {autor.Apellidos}";
+        private string MapperNameAndLastName(Autor autor) => $"{autor.Nombre} {autor.Apellidos}";
     }
 }

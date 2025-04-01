@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using BIBLIOTECA_API.Entidades;
 
 namespace BIBLIOTECA_API.DTOs
 {
@@ -13,5 +14,7 @@ namespace BIBLIOTECA_API.DTOs
         public required string Apellidos { get; set; }
         [StringLength(20, ErrorMessage = "El campo {0} debe tener {1} caracteres o menos")]
         public string? Identificacion { get; set; }
+
+        public List<LibroCreateDTO> Libros { get; set; } = [];
     }
 }

@@ -1,9 +1,10 @@
 ﻿using BIBLIOTECA_API.Entidades;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BIBLIOTECA_API.DB
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext
     {
         public ApplicationDbContext (DbContextOptions options) : base(options)
         {
@@ -25,6 +26,7 @@ namespace BIBLIOTECA_API.DB
         public DbSet<Libro> Libros { get; set; }
 
         public DbSet<Comment> Comments { get; set; }
+        public DbSet<AutorLibro> AutoresLibros { get; set; }
 
     }
 }

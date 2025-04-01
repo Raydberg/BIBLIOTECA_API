@@ -46,7 +46,10 @@ namespace BIBLIOTECA_API.Controllers
         [HttpGet("{id:int}", Name = "ObtenerAutor")]
         public async Task<ActionResult<AutorWithLibrosDTO>> Get (int id)
         {
-            var autor = await context.Autores.Include(autor => autor.Libros).FirstOrDefaultAsync(autor => autor.Id == id);
+            var autor = await context.Autores
+                .Include(autor => autor.Libros)
+                .ThenInclude(X=>X.Libro)
+                .FirstOrDefaultAsync(autor => autor.Id == id);
 
             if (autor is null)
             {

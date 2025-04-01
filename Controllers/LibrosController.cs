@@ -14,14 +14,14 @@ namespace BIBLIOTECA_API.Controllers
         private readonly ApplicationDbContext context;
         private readonly IMapper _mapper;
 
-        public LibrosController (ApplicationDbContext context, IMapper mapper)
+        public LibrosController(ApplicationDbContext context, IMapper mapper)
         {
             this.context = context;
             _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<IEnumerable<LibroDTO>> Get ()
+        public async Task<IEnumerable<LibroDTO>> Get()
         {
             var libro = await context.Libros.ToListAsync();
             var libroDTO = _mapper.Map<IEnumerable<LibroDTO>>(libro);
@@ -30,10 +30,11 @@ namespace BIBLIOTECA_API.Controllers
         }
 
         [HttpGet("{id:int}", Name = "ObtenerLibro")]
-        public async Task<ActionResult<LibroWithAutorDTO>> Get (int id)
+        public async Task<ActionResult<LibroWithAutorsDTO>> Get(int id)
         {
             var libro = await context.Libros
-                .Include(libro => libro.Autor)
+                .Include(libro => libro.Autores)
+                .ThenInclude(x=> x.Autor)
                 .FirstOrDefaultAsync(libro => libro.Id == id);
 
 
@@ -41,50 +42,86 @@ namespace BIBLIOTECA_API.Controllers
             {
                 return NotFound("Libro no encontrado");
             }
-            var libroDTO = _mapper.Map<LibroWithAutorDTO>(libro);
+
+            var libroDTO = _mapper.Map<LibroWithAutorsDTO>(libro);
 
             return libroDTO;
         }
 
         [HttpPost]
-
-        public async Task<ActionResult> Post (LibroCreateDTO libroCreateDto)
+        public async Task<ActionResult> Post(LibroCreateDTO libroCreateDto)
         {
-            var libro = _mapper.Map<Libro>(libroCreateDto);
-
-            // Permite obtener true o false , que cuumpla la condicion dada
-            var isAutor = await context.Autores.AnyAsync(autor => autor.Id == libro.AutorId);
-            if (!isAutor)
+            if (libroCreateDto.AutoresIds is null || libroCreateDto.AutoresIds.Count == 0)
             {
-
-                ModelState.AddModelError(nameof(libro.AutorId), "El autor de id {libro.AutorId} no existe");
+                // Retornar un error
+                ModelState.AddModelError(nameof(libroCreateDto.AutoresIds), "No se puede crear un libro sin autores ");
                 return ValidationProblem();
             }
+
+            var autoresIdsExist = await context.Autores
+                .Where(x => libroCreateDto.AutoresIds.Contains(x.Id))
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            if (autoresIdsExist.Count != libroCreateDto.AutoresIds.Count)
+            {
+                var autoresNotFound = libroCreateDto.AutoresIds.Except(autoresIdsExist);
+                var autoresNotFoundString = string.Join(", ", autoresNotFound);
+                var messageError = $"Los Siguientes autores no existes {autoresNotFoundString}";
+                ModelState.AddModelError(nameof(libroCreateDto.AutoresIds), messageError);
+                return ValidationProblem();
+            }
+
+            var libro = _mapper.Map<Libro>(libroCreateDto);
+
             context.Add(libro);
             await context.SaveChangesAsync();
 
             var libroDto = _mapper.Map<LibroDTO>(libro);
+            AsignarOrdenAutores(libro);
 
             return CreatedAtRoute("ObtenerLibro", new { id = libro.Id }, libroDto);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put (int id, LibroCreateDTO libroCreateDto)
+        public async Task<ActionResult> Put(int id, LibroCreateDTO libroCreateDto)
         {
-            var libro = _mapper.Map<Libro>(libroCreateDto);
-
-            var isAutor = await context.Autores.AnyAsync(autor => autor.Id == libro.AutorId);
-            if (!isAutor)
+            if (libroCreateDto.AutoresIds is null || libroCreateDto.AutoresIds.Count == 0)
             {
-                return BadRequest($"El autor de id {libro.AutorId} no existe");
+                // Retornar un error
+                ModelState.AddModelError(nameof(libroCreateDto.AutoresIds), "No se puede crear un libro sin autores ");
+                return ValidationProblem();
             }
-            context.Update(libro);
+
+            var autoresIdsExist = await context.Autores
+                .Where(x => libroCreateDto.AutoresIds.Contains(x.Id))
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            if (autoresIdsExist.Count != libroCreateDto.AutoresIds.Count)
+            {
+                var autoresNotFound = libroCreateDto.AutoresIds.Except(autoresIdsExist);
+                var autoresNotFoundString = string.Join(", ", autoresNotFound);
+                var messageError = $"Los Siguientes autores no existes {autoresNotFoundString}";
+                ModelState.AddModelError(nameof(libroCreateDto.AutoresIds), messageError);
+                return ValidationProblem();
+            }
+
+            var libroDB = await context.Libros.Include(x => x.Autores)
+                .FirstOrDefaultAsync(libro => libro.Id == id);
+            if (libroDB is null)
+            {
+                return NotFound();
+            }
+
+            libroDB = _mapper.Map(libroCreateDto, libroDB);
+            AsignarOrdenAutores(libroDB);
             await context.SaveChangesAsync();
             return NoContent();
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<ActionResult> Deleted (int id)
+        public async Task<ActionResult> Deleted(int id)
         {
             var libroBorrado = await context.Libros.Where(libro => libro.Id == id).ExecuteDeleteAsync();
             if (libroBorrado == 0)
@@ -93,6 +130,17 @@ namespace BIBLIOTECA_API.Controllers
             }
 
             return NoContent();
+        }
+
+        private void AsignarOrdenAutores(Libro libro)
+        {
+            if (libro.Autores is not null)
+            {
+                for (int i = 0; i < libro.Autores.Count; i++)
+                {
+                    libro.Autores[i].Orden = i;
+                }
+            }
         }
     }
 }

@@ -7,13 +7,10 @@ namespace BIBLIOTECA_API.Entidades
         public int Id { get; set; }
         [Required]
         public required string Titulo { get; set; }
-        // Llave foranea para comunicarse con los autores
-        public int AutorId { get; set; }
+
+        public List<AutorLibro> Autores { get; set; } = [];
 
         public List<Comment> Comments { get; set; } = [];
-
-        //Propiedad de navegacion para ir a traer la data de la otra entidad
-        public Autor? Autor { get; set; }
 
     }
 }
