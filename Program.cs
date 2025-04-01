@@ -1,8 +1,9 @@
 using BIBLIOTECA_API.DB;
+using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
+Env.Load();
 // Area de servicios 
 
 // Configurar automapper en nuestra aplicacio
@@ -14,8 +15,9 @@ builder.Services.AddAutoMapper(typeof(Program));
 //Configuracion de 
 builder.Services.AddControllers().AddNewtonsoftJson();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer("name=DefaultConnection"));
+var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
 
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 var app = builder.Build();
 
 
