@@ -2,6 +2,7 @@
 using BIBLIOTECA_API.DB;
 using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ namespace BIBLIOTECA_API.Controllers
 {
     [ApiController]
     [Route("api/libros")]
+    [Authorize]
     public class LibrosController : ControllerBase
     {
         private readonly ApplicationDbContext context;

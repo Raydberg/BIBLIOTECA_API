@@ -2,6 +2,7 @@ using AutoMapper;
 using BIBLIOTECA_API.DB;
 using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace BIBLIOTECA_API.Controllers
 {
     [Route("api/autores-coleccion")]
     [ApiController]
+    [Authorize]
     public class AutoresColeccionController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

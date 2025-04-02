@@ -2,6 +2,7 @@
 using BIBLIOTECA_API.DB;
 using BIBLIOTECA_API.DTOs;
 using BIBLIOTECA_API.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ namespace BIBLIOTECA_API.Controllers
 {
     [ApiController] //-> Se refiere a un controlador 
     [Route("api/autores")] //-> Ruta en la que se encuentra el controlador 
+    [Authorize] //-> Todas las acciones deben estar autenticadas
     public class AutoresController : ControllerBase
     {
         private readonly ApplicationDbContext context;
@@ -23,6 +25,7 @@ namespace BIBLIOTECA_API.Controllers
             _mapper = mapper;
         }
         [HttpGet]
+        [AllowAnonymous] //-> Accion no autenticada
         public async Task<IEnumerable<AutorDTO>> Get ()
         {
             var autores = await context.Autores.ToListAsync();
