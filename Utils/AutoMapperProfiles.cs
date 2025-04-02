@@ -64,7 +64,9 @@ namespace BIBLIOTECA_API.Utils
 
 
             CreateMap<CommentCreateDTO, Comment>();
-            CreateMap<CommentPatchDTO, Comment>();
+            CreateMap<Comment, CommentDTO>()
+                .ForMember(dto => dto.UserEmail,
+                    config=> config.MapFrom(ent => ent.Usuario!.Email));
             CreateMap<CommentPatchDTO, Comment>().ReverseMap();
         }
 

@@ -1,5 +1,6 @@
 using System.Text;
 using BIBLIOTECA_API.DB;
+using BIBLIOTECA_API.Services;
 using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,8 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
 var KeyJwt = Environment.GetEnvironmentVariable("key_jwt");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.AddTransient<IServiceUsers, UsersService>();
 
 // Configurar Identity Login and Logout
 builder.Services.AddIdentityCore<IdentityUser>()
